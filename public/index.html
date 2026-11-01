@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>নাম দেশ ফুল ফল - মাল্টিপ্লেয়ার গেম</title>
+    <title>নাম দেশ ফুল ফল - রিয়েল-টাইম মাল্টিপ্লেয়ার</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         * { box-sizing: border-box; }
         body, html { height: 100%; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #1e3c72, #2a5298); color: #333; }
-        .main-container { max-width: 600px; height: 100vh; margin: auto; display: flex; flex-direction: column; background: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.3); }
+        .main-container { max-width: 650px; height: 100vh; margin: auto; display: flex; flex-direction: column; background: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.3); }
         .header-bar { background: #ff4757; color: white; padding: 15px; text-align: center; font-size: 22px; font-weight: bold; letter-spacing: 1px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
         .content-area { padding: 15px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
         .center-box { text-align: center; margin: auto; width: 100%; }
@@ -18,7 +18,7 @@
         .btn:active { transform: scale(0.98); }
         .btn-room { background-color: #1e90ff; }
         .timer-box { font-size: 18px; font-weight: bold; color: #ff4757; text-align: center; background: #ffeaa7; padding: 10px; border-radius: 8px; border: 1px dashed #fdcb6e; }
-        .letter-banner { font-size: 24px; font-weight: bold; color: #fff; background: #9b59b6; text-align: center; padding: 10px; border-radius: 8px; }
+        .letter-banner { font-size: 22px; font-weight: bold; color: #fff; background: #9b59b6; text-align: center; padding: 10px; border-radius: 8px; }
         .game-inputs { display: grid; grid-template-columns: 1fr; gap: 10px; }
         .game-inputs input { padding: 12px; border: 2px solid #dfe6e9; border-radius: 8px; font-size: 15px; text-align: center; outline: none; background: #f8f9fa; }
         .game-inputs input:focus { border-color: #0984e3; background: #fff; }
@@ -53,6 +53,7 @@
             <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: bold; color: #555;">
                 <span>খেলোয়াড়: <span id="display-player-name" style="color: #1e90ff;"></span></span>
                 <span>রুম: <span id="display-room-code" style="color: #ff4757;"></span></span>
+                <span>রাউন্ড: <span id="round-count">১</span>/১০</span>
             </div>
 
             <div class="letter-banner">চলতি অক্ষর: <span id="current-letter">-</span></div>
@@ -60,7 +61,7 @@
 
             <div class="game-inputs">
                 <input type="text" id="input-name" placeholder="নাম (Name)">
-                <input type="text" id="input-country" placeholder="দেশ (Country)">
+                <input type="text" id="input-country" placeholder="দেশ, জেলা, শহর, গ্রাম">
                 <input type="text" id="input-flower" placeholder="ফুল (Flower)">
                 <input type="text" id="input-fruit" placeholder="ফল (Fruit)">
                 <input type="text" id="input-things" placeholder="জিনিস (Things)">
@@ -83,6 +84,9 @@
 <script>
     const socket = io();
     let playerName = '', roomCode = '', timerInterval;
+    let currentRound = 1;
+    const maxRounds = 10;
+    const letters = ['ক', 'খ', 'গ', 'চ', 'জ', 'ট', 'ড', 'ত', 'দ', 'ন', 'প', 'ব', 'ম', 'র', 'ল', 'স'];
 
     function joinGameRoom() {
         playerName = document.getElementById('player-name-input').value.trim();
@@ -97,13 +101,20 @@
         document.getElementById('game-screen').classList.remove('hidden');
         
         socket.emit('join_room', { name: playerName, room: roomCode, time: selectedTime });
-        startTimer(selectedTime);
+        startNewRound(selectedTime);
     }
 
-    function startTimer(duration) {
+    function startNewRound(duration) {
+        if(currentRound > maxRounds) {
+            alert('ম্যাচ সম্পন্ন হয়েছে!');
+            return;
+        }
+        document.getElementById('round-count').innerText = currentRound;
+        const randomLetter = letters[Math.floor(Math.random() * letters.length)];
+        document.getElementById('current-letter').innerText = randomLetter;
+
         let timer = duration, seconds;
         clearInterval(timerInterval);
-        document.getElementById('current-letter').innerText = 'ক'; // ডিফল্ট বা রেন্ডম অক্ষর
         timerInterval = setInterval(() => {
             seconds = parseInt(timer % 60, 10);
             document.getElementById('timer').textContent = seconds;
@@ -121,12 +132,27 @@
         const fr = document.getElementById('input-fruit').value.trim() || '-';
         const t = document.getElementById('input-things').value.trim() || '-';
         
-        // ম্যানুয়াল পয়েন্ট প্লেয়ার ইনপুট নেওয়ার অপশন বা ডিফল্ট ক্যালকুলেশন
         let manualPts = prompt("আপনার প্রাপ্ত পয়েন্ট নিজে যাচাই করে লিখুন (যেমন: 10, 20, 50):", "50");
         let pts = parseInt(manualPts) || 0;
         
-        socket.emit('submit_row', { room: roomCode, player: playerName, details: `নাম: ${n}, দেশ: ${c}, ফুল: ${f}, ফল: ${fr}, জিনিস: ${t}`, points: pts });
-        alert('আপনার উত্তর সফলভাবে জমা হয়েছে!');
+        socket.emit('submit_row', { 
+            room: roomCode, 
+            player: playerName, 
+            details: `নাম: ${n}, দেশ: ${c}, ফুল: ${f}, ফল: ${fr}, জিনিস: ${t}`, 
+            points: pts 
+        });
+        
+        // Clear inputs for next round
+        document.getElementById('input-name').value = '';
+        document.getElementById('input-country').value = '';
+        document.getElementById('input-flower').value = '';
+        document.getElementById('input-fruit').value = '';
+        document.getElementById('input-things').value = '';
+
+        currentRound++;
+        if(currentRound <= maxRounds) {
+            startNewRound(60);
+        }
     }
 
     socket.on('update_board', (data) => {

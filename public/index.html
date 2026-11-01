@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>নাম দেশ ফুল ফল - অনলাইন মাল্টিপ্লেয়ার</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body, html { height: 100%; margin: 0; padding: 0; font-family: sans-serif; background: #f8f9fa; }
+        .main-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: space-between; padding: 10px; background: #fff; }
+        h2.title { text-align: center; color: #2c3e50; font-size: 20px; border-bottom: 2px solid #eee; padding-bottom: 5px; }
+        .center-box { text-align: center; margin: auto; }
+        .input-group input { padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; width: 280px; text-align: center; margin-bottom: 10px; }
+        .game-main-layout { display: flex; gap: 10px; flex-grow: 1; align-items: center; justify-content: center; }
+        .table-side { flex: 3; max-height: 75vh; overflow-y: auto; }
+        .sidebar-side { flex: 1; display: flex; flex-direction: column; gap: 10px; align-items: center; background: #fafafa; padding: 10px; border-radius: 8px; border: 1px solid #ddd; }
+        table.game-table { width: 100%; border-collapse: collapse; border: 2px solid #000; }
+        table.game-table th, table.game-table td { border: 1px solid #000; padding: 6px; text-align: center; font-size: 13px; }
+        table.game-table th { background-color: #f1f2f6; position: sticky; top: 0; }
+        table.game-table input { width: 100%; border: none; background: transparent; text-align: center; outline: none; }
+        .submit-btn, .room-btn { background-color: #27ae60; color: white; padding: 10px; font-size: 15px; border: none; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; }
+        .room-btn { background-color: #2980b9; width: 280px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+<div class="main-container">
+    <h2 class="title">নাম দেশ ফুল ফল</h2>
+    <div id="home-screen" class="center-box">
+        <p style="color: #666; font-size: 15px;">আপনার নাম ও রুম কোড দিন</p>
+        <div class="input-group">
+            <input type="text" id="player-name-input" placeholder="আপনার নাম"><br>
+            <input type="text" id="room-code-input" placeholder="রুম কোড (যেমন: 123)">
+        </div>
+        <button class="room-btn" onclick="joinGameRoom()">রুমে প্রবেশ করুন</button>
+    </div>
+    <div id="game-screen" class="hidden game-main-layout">
+        <div class="table-side">
+            <table class="game-table">
+                <thead>
+                    <tr><th>খেলোয়াড়</th><th>নাম</th><th>দেশ</th><th>ফুল</th><th>ফল</th><th>জিনিস</th><th>পয়েন্ট</th></tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+        <div class="sidebar-side">
+            <div style="font-size: 13px; font-weight: bold;">খেলোয়াড়: <span id="display-player-name" style="color: #2980b9;"></span></div>
+            <div style="font-size: 13px; font-weight: bold;">রুম: <span id="display-room-code" style="color: #c0392b;"></span></div>
+            <table class="game-table">
+                <tr>
+                    <td><input type="text" id="input-name" placeholder="নাম"></td>
+                    <td><input type="text" id="input-country" placeholder="দেশ"></td>
+                    <td><input type="text" id="input-flower" placeholder="ফুল"></td>
+                    <td><input type="text" id="input-fruit" placeholder="ফল"></td>
+                    <td><input type="text" id="input-things" placeholder="জিনিস"></td>
+                </tr>
+            </table>
+            <button class="submit-btn" onclick="submitData()">জমা দিন</button>
+        </div>
+    </div>
+</div>
+<script>
+    const socket = io();
+    let playerName = '', roomCode = '';
+    function joinGameRoom() {
+        playerName = document.getElementById('player-name-input').value.trim();
+        roomCode = document.getElementById('room-code-input').value.trim();
+        if(!playerName || !roomCode) { alert('নাম ও রুম কোড দিন!'); return; }
+        document.getElementById('display-player-name').innerText = playerName;
+        document.getElementById('display-room-code').innerText = roomCode;
+        document.getElementById('home-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        socket.emit('join_room', { name: playerName, room: roomCode });
+    }
+    function submitData() {
+        const n = document.getElementById('input-name').value.trim() || '(খালি)';
+        const c = document.getElementById('input-country').value.trim() || '(খালি)';
+        const f = document.getElementById('input-flower').value.trim() || '(খালি)';
+        const fr = document.getElementById('input-fruit').value.trim() || '(খালি)';
+        const t = document.getElementById('input-things').value.trim() || '(খালি)';
+        let pts = (n!=='(খালি)'?10:0) + (c!=='(খালি)'?10:0) + (f!=='(খালি)'?10:0) + (fr!=='(খালি)'?10:0) + (t!=='(খালি)'?10:0);
+        socket.emit('submit_row', { room: roomCode, player: playerName, name: n, country: c, flower: f, fruit: fr, things: t, points: pts });
+        alert('জমা হয়েছে!');
+    }
+    socket.on('update_board', (data) => {
+        const tbody = document.getElementById('table-body');
+        tbody.innerHTML += `<tr><td style="font-weight:bold; color:#2980b9;">${data.player}</td><td>${data.name}</td><td>${data.country}</td><td>${data.flower}</td><td>${data.fruit}</td><td>${data.things}</td><td style="font-weight:bold; color:#27ae60;">${data.points}</td></tr>`;
+    });
+</script>
+</body>
+</html>

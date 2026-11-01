@@ -3,162 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>নাম দেশ ফুল ফল - রিয়েল-টাইম মাল্টিপ্লেয়ার</title>
+    <title>নাম দেশ ফুল ফল - আল্টিমেট গেমিং এডিশন</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         * { box-sizing: border-box; }
-        body, html { height: 100%; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #1e3c72, #2a5298); color: #333; }
-        .main-container { max-width: 650px; height: 100vh; margin: auto; display: flex; flex-direction: column; background: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.3); }
-        .header-bar { background: #ff4757; color: white; padding: 15px; text-align: center; font-size: 22px; font-weight: bold; letter-spacing: 1px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
-        .content-area { padding: 15px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .center-box { text-align: center; margin: auto; width: 100%; }
-        .input-group input, .input-group select { padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 8px; width: 100%; max-width: 320px; text-align: center; margin-bottom: 12px; outline: none; transition: 0.3s; }
-        .input-group input:focus { border-color: #2ed573; }
-        .btn { background-color: #2ed573; color: white; padding: 12px; font-size: 16px; border: none; border-radius: 8px; width: 100%; max-width: 320px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s; }
-        .btn:active { transform: scale(0.98); }
-        .btn-room { background-color: #1e90ff; }
-        .timer-box { font-size: 18px; font-weight: bold; color: #ff4757; text-align: center; background: #ffeaa7; padding: 10px; border-radius: 8px; border: 1px dashed #fdcb6e; }
-        .letter-banner { font-size: 22px; font-weight: bold; color: #fff; background: #9b59b6; text-align: center; padding: 10px; border-radius: 8px; }
-        .game-inputs { display: grid; grid-template-columns: 1fr; gap: 10px; }
-        .game-inputs input { padding: 12px; border: 2px solid #dfe6e9; border-radius: 8px; font-size: 15px; text-align: center; outline: none; background: #f8f9fa; }
-        .game-inputs input:focus { border-color: #0984e3; background: #fff; }
-        table.score-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        table.score-table th, table.score-table td { border: 1px solid #dfe6e9; padding: 10px; text-align: center; font-size: 14px; }
-        table.score-table th { background-color: #f1f2f6; color: #2f3640; }
-        .hidden { display: none; }
+        body, html { height: 100%; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: #fff; overflow-x: hidden; }
+        
+        /* Force Landscape/Full Gaming View Container */
+        .main-container { width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        
+        /* Card Boxes */
+        .game-card { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); padding: 25px; border-radius: 15px; width: 100%; max-width: 500px; text-align: center; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); }
+        
+        h1, h2, h3 { margin-top: 0; color: #f1c40f; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        
+        input, select { width: 100%; padding: 12px; margin: 10px 0; background: rgba(0,0,0,0.3); border: 1px solid #7f8c8d; border-radius: 8px; color: #fff; font-size: 16px; text-align: center; outline: none; }
+        input::placeholder { color: #bdc3c7; }
+        
+        .btn { width: 100%; padding: 12px; margin: 10px 0; background: #e74c3c; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4); }
+        .btn:hover { background: #c0392b; transform: translateY(-2px); }
+        .btn-blue { background: #3498db; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4); }
+        .btn-blue:hover { background: #2980b9; }
+        
+        .hidden { display: none !important; }
+        
+        /* Intro Animation */
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        .animate-intro { animation: fadeIn 1s ease-in-out; }
     </style>
 </head>
 <body>
+
 <div class="main-container">
-    <div class="header-bar">🎮 নাম দেশ ফুল ফল</div>
-    
-    <div class="content-area">
-        <!-- Home Screen -->
-        <div id="home-screen" class="center-box">
-            <h3 style="color: #2f3640;">খেলার জন্য নাম ও রুম কোড দিন</h3>
-            <div class="input-group">
-                <input type="text" id="player-name-input" placeholder="আপনার নাম"><br>
-                <input type="text" id="room-code-input" placeholder="রুম কোড (যেমন: 123)"><br>
-                <select id="round-time-input">
-                    <option value="30">৩০ সেকেন্ড (ফাস্ট)</option>
-                    <option value="60" selected>৬০ সেকেন্ড (স্ট্যান্ডার্ড)</option>
-                    <option value="90">৯০ সেকেন্ড (ধীরে-সুস্থে)</option>
-                </select>
-            </div>
-            <button class="btn btn-room" onclick="joinGameRoom()">রুমে প্রবেশ করুন</button>
-        </div>
 
-        <!-- Game Screen -->
-        <div id="game-screen" class="hidden" style="display: flex; flex-direction: column; gap: 15px;">
-            <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: bold; color: #555;">
-                <span>খেলোয়াড়: <span id="display-player-name" style="color: #1e90ff;"></span></span>
-                <span>রুম: <span id="display-room-code" style="color: #ff4757;"></span></span>
-                <span>রাউন্ড: <span id="round-count">১</span>/১০</span>
-            </div>
-
-            <div class="letter-banner">চলতি অক্ষর: <span id="current-letter">-</span></div>
-            <div class="timer-box">সময় বাকি: <span id="timer">60</span> সেকেন্ড</div>
-
-            <div class="game-inputs">
-                <input type="text" id="input-name" placeholder="নাম (Name)">
-                <input type="text" id="input-country" placeholder="দেশ, জেলা, শহর, গ্রাম">
-                <input type="text" id="input-flower" placeholder="ফুল (Flower)">
-                <input type="text" id="input-fruit" placeholder="ফল (Fruit)">
-                <input type="text" id="input-things" placeholder="জিনিস (Things)">
-            </div>
-            <button class="btn" onclick="submitData()">উত্তর জমা দিন</button>
-
-            <div>
-                <h4 style="margin-bottom: 5px; color: #2f3640;">স্কোরবোর্ড ও লাইভ উত্তর:</h4>
-                <table class="score-table">
-                    <thead>
-                        <tr><th>খেলোয়াড়</th><th>উত্তরসমূহ</th><th>পয়েন্ট</th></tr>
-                    </thead>
-                    <tbody id="table-body"></tbody>
-                </table>
-            </div>
-        </div>
+    <!-- ۱. ইন্ট্রো স্ক্রিন -->
+    <div id="intro-screen" class="game-card animate-intro">
+        <h1>🎮 নাম দেশ ফুল ফল</h1>
+        <p style="color: #ecf0f1; font-size: 14px; margin-bottom: 20px;">ক্লাসিক খাতা-কলম গেমের আধুনিক মাল্টিপ্লেয়ার রূপ!</p>
+        <button class="btn" onclick="showProfileScreen()">খেলা শুরু করুন</button>
     </div>
+
+    <!-- ২. প্রোফাইল সেটআপ স্ক্রিন -->
+    <div id="profile-screen" class="game-card hidden animate-intro">
+        <h2>প্রোফাইল তৈরি করুন</h2>
+        <input type="text" id="p-name" placeholder="আপনার নাম লিখুন">
+        <input type="number" id="p-age" placeholder="বয়স (যেমন: 24)" value="24">
+        <select id="p-gender">
+            <option value="Male">পুরুষ (Male)</option>
+            <option value="Female">মহিলা (Female)</option>
+            <option value="Other">অন্যান্য</option>
+        </select>
+        <button class="btn btn-blue" onclick="saveProfile()">পরবর্তী ধাপ</button>
+    </div>
+
+    <!-- ৩. মোড সিলেকশন (বট বনাম ফ্রেন্ড) -->
+    <div id="mode-screen" class="game-card hidden animate-intro">
+        <h2>গেম মোড বেছে নিন</h2>
+        <p>স্বাগতম, <span id="welcome-name" style="color: #2ecc71; font-weight: bold;"></span>!</p>
+        <button class="btn" onclick="startBotMatch()">🤖 বট এর সাথে খেলুন (Play with Bot)</button>
+        <button class="btn btn-blue" onclick="showRoomOptions()">👥 বন্ধুদের সাথে খেলুন (Friend Match)</button>
+    </div>
+
+    <!-- ৪. রুম অপশন (ক্রিয়েট বা জয়েন) -->
+    <div id="room-menu-screen" class="game-card hidden animate-intro">
+        <h2>ফ্রেন্ড ম্যাচ রুম</h2>
+        <button class="btn" onclick="showCreateRoom()">রুম তৈরি করুন (Create Room)</button>
+        <button class="btn btn-blue" onclick="showJoinRoom()">রুমে প্রবেশ করুন (Join Room)</button>
+        <button class="btn" style="background: #7f8c8d;" onclick="backToMode()">পেছনে যান</button>
+    </div>
+
+    <!-- ৫. রুম ক্রিয়েট ও সেটিংস স্ক্রিন (লিডার) -->
+    <div id="create-room-screen" class="game-card hidden animate-intro" style="max-height: 90vh; overflow-y: auto;">
+        <h2>রুম ও গেম সেটিংস</h2>
+        <input type="text" id="room-name-input" placeholder="রুমের নাম (Room Name)">
+        <input type="password" id="room-pass-input" placeholder="রুম পাসওয়ার্ড (Password)">
+        
+        <label style="font-size: 13px; color: #bdc3c7;">প্রতি রাউন্ডের সময় (মিনিট):</label>
+        <input type="number" id="room-time-input" placeholder="মিনিট (যেমন: 2 বা 1)" value="1">
+
+        <label style="font-size: 13px; color: #bdc3c7;">মোট রাউন্ড (৫ থেকে ৫০):</label>
+        <input type="number" id="room-rounds-input" placeholder="রাউন্ড সংখ্যা (৫-৫০)" value="10" min="5" max="50">
+
+        <label style="font-size: 13px; color: #bdc3c7;">ক্যাটাগরি সমূহ:</label>
+        <div style="text-align: left; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; margin: 10px 0; font-size: 14px;">
+            ✅ নাম<br>
+            ✅ দেশ, জেলা, শহর, গ্রাম<br>
+            ✅ ফুল<br>
+            ✅ ফল<br>
+            ✅ জিনিস<br>
+            <input type="text" id="extra-category" placeholder="+ অতিরিক্ত ক্যাটাগরি যোগ করুন (যদি চায়)">
+        </div>
+
+        <button class="btn" onclick="createRoomAction()">রুম খুলুন ও এন্টার করুন</button>
+    </div>
+
+    <!-- ৬. জয়েন রুম স্ক্রিন -->
+    <div id="join-room-screen" class="game-card hidden animate-intro">
+        <h2>রুমে প্রবেশ করুন</h2>
+        <input type="text" id="join-room-name" placeholder="রুমের নাম">
+        <input type="password" id="join-room-pass" placeholder="রুম পাসওয়ার্ড">
+        <button class="btn btn-blue" onclick="joinRoomAction()">রুমে ঢুকুন</button>
+        <button class="btn" style="background: #7f8c8d;" onclick="showRoomOptions()">পেছনে যান</button>
+    </div>
+
+    <!-- ৭. লবি ও ওয়েটিং স্ক্রিন -->
+    <div id="lobby-screen" class="game-card hidden animate-intro">
+        <h2>রুম লবি: <span id="lbl-room-name" style="color: #f1c40f;"></span></h2>
+        <p>রুম লিডার গেম স্টার্ট করার জন্য অপেক্ষা করুন...</p>
+        <div id="players-list" style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin: 15px 0; min-height: 80px;">
+            <!-- Player list items -->
+        </div>
+        <button id="start-match-btn" class="btn hidden" onclick="startTheMatch()">ম্যাচ শুরু করুন (Start Match)</button>
+    </div>
+
 </div>
 
 <script>
     const socket = io();
-    let playerName = '', roomCode = '', timerInterval;
-    let currentRound = 1;
-    const maxRounds = 10;
-    const letters = ['ক', 'খ', 'গ', 'চ', 'জ', 'ট', 'ড', 'ত', 'দ', 'ন', 'প', 'ব', 'ম', 'র', 'ল', 'স'];
+    let userData = { name: '', age: '', gender: '' };
+    let currentRoom = '';
+    let isLeader = false;
 
-    function joinGameRoom() {
-        playerName = document.getElementById('player-name-input').value.trim();
-        roomCode = document.getElementById('room-code-input').value.trim();
-        const selectedTime = document.getElementById('round-time-input').value;
-
-        if(!playerName || !roomCode) { alert('নাম ও রুম কোড দিন!'); return; }
-        
-        document.getElementById('display-player-name').innerText = playerName;
-        document.getElementById('display-room-code').innerText = roomCode;
-        document.getElementById('home-screen').classList.add('hidden');
-        document.getElementById('game-screen').classList.remove('hidden');
-        
-        socket.emit('join_room', { name: playerName, room: roomCode, time: selectedTime });
-        startNewRound(selectedTime);
+    function showProfileScreen() {
+        document.getElementById('intro-screen').classList.add('hidden');
+        document.getElementById('profile-screen').classList.remove('hidden');
     }
 
-    function startNewRound(duration) {
-        if(currentRound > maxRounds) {
-            alert('ম্যাচ সম্পন্ন হয়েছে!');
+    function saveProfile() {
+        userData.name = document.getElementById('p-name').value.trim();
+        userData.age = document.getElementById('p-age').value.trim();
+        userData.gender = document.getElementById('p-gender').value;
+
+        if(!userData.name) {
+            alert('দয়া করে আপনার নাম লিখুন!');
             return;
         }
-        document.getElementById('round-count').innerText = currentRound;
-        const randomLetter = letters[Math.floor(Math.random() * letters.length)];
-        document.getElementById('current-letter').innerText = randomLetter;
 
-        let timer = duration, seconds;
-        clearInterval(timerInterval);
-        timerInterval = setInterval(() => {
-            seconds = parseInt(timer % 60, 10);
-            document.getElementById('timer').textContent = seconds;
-            if (--timer < 0) {
-                clearInterval(timerInterval);
-                alert('এই রাউন্ডের সময় শেষ!');
-            }
-        }, 1000);
+        document.getElementById('welcome-name').innerText = userData.name;
+        document.getElementById('profile-screen').classList.add('hidden');
+        document.getElementById('mode-screen').classList.remove('hidden');
     }
 
-    function submitData() {
-        const n = document.getElementById('input-name').value.trim() || '-';
-        const c = document.getElementById('input-country').value.trim() || '-';
-        const f = document.getElementById('input-flower').value.trim() || '-';
-        const fr = document.getElementById('input-fruit').value.trim() || '-';
-        const t = document.getElementById('input-things').value.trim() || '-';
-        
-        let manualPts = prompt("আপনার প্রাপ্ত পয়েন্ট নিজে যাচাই করে লিখুন (যেমন: 10, 20, 50):", "50");
-        let pts = parseInt(manualPts) || 0;
-        
-        socket.emit('submit_row', { 
-            room: roomCode, 
-            player: playerName, 
-            details: `নাম: ${n}, দেশ: ${c}, ফুল: ${f}, ফল: ${fr}, জিনিস: ${t}`, 
-            points: pts 
-        });
-        
-        // Clear inputs for next round
-        document.getElementById('input-name').value = '';
-        document.getElementById('input-country').value = '';
-        document.getElementById('input-flower').value = '';
-        document.getElementById('input-fruit').value = '';
-        document.getElementById('input-things').value = '';
+    function startBotMatch() {
+        alert('বট মোড লোড হচ্ছে! (আপনাকেসহ মোট ৪ জন খেলবেন)');
+        // Bot match logic trigger here
+    }
 
-        currentRound++;
-        if(currentRound <= maxRounds) {
-            startNewRound(60);
+    function showRoomOptions() {
+        document.getElementById('mode-screen').classList.add('hidden');
+        document.getElementById('room-menu-screen').classList.remove('hidden');
+        document.getElementById('create-room-screen').classList.add('hidden');
+        document.getElementById('join-room-screen').classList.add('hidden');
+    }
+
+    function backToMode() {
+        document.getElementById('room-menu-screen').classList.add('hidden');
+        document.getElementById('mode-screen').classList.remove('hidden');
+    }
+
+    function showCreateRoom() {
+        isLeader = true;
+        document.getElementById('room-menu-screen').classList.add('hidden');
+        document.getElementById('create-room-screen').classList.remove('hidden');
+    }
+
+    function showJoinRoom() {
+        isLeader = false;
+        document.getElementById('room-menu-screen').classList.add('hidden');
+        document.getElementById('join-room-screen').classList.remove('hidden');
+    }
+
+    function createRoomAction() {
+        const rName = document.getElementById('room-name-input').value.trim();
+        const rPass = document.getElementById('room-pass-input').value;
+        const rTime = document.getElementById('room-time-input').value;
+        const rRounds = document.getElementById('room-rounds-input').value;
+
+        if(!rName || !rPass) {
+            alert('রুমের নাম এবং পাসওয়ার্ড দিন!');
+            return;
         }
+
+        currentRoom = rName;
+        socket.emit('create_custom_room', { room: rName, pass: rPass, time: rTime, rounds: rRounds, player: userData });
     }
 
-    socket.on('update_board', (data) => {
-        const tbody = document.getElementById('table-body');
-        tbody.innerHTML += `<tr><td style="font-weight:bold; color:#1e90ff;">${data.player}</td><td style="text-align:left; font-size:12px;">${data.details}</td><td style="font-weight:bold; color:#2ed573;">${data.points}</td></tr>`;
+    function joinRoomAction() {
+        const rName = document.getElementById('join-room-name').value.trim();
+        const rPass = document.getElementById('join-room-pass').value;
+
+        if(!rName || !rPass) {
+            alert('সঠিক রুম নাম ও পাসওয়ার্ড দিন!');
+            return;
+        }
+
+        currentRoom = rName;
+        socket.emit('join_custom_room', { room: rName, pass: rPass, player: userData });
+    }
+
+    socket.on('room_joined_success', (data) => {
+        document.getElementById('create-room-screen').classList.add('hidden');
+        document.getElementById('join-room-screen').classList.add('hidden');
+        document.getElementById('lobby-screen').classList.remove('hidden');
+        
+        document.getElementById('lbl-room-name').innerText = currentRoom;
+        if(isLeader) {
+            document.getElementById('start-match-btn').classList.remove('hidden');
+        }
+        updatePlayerListUI(data.players);
     });
+
+    function updatePlayerListUI(players) {
+        let listDiv = document.getElementById('players-list');
+        listDiv.innerHTML = '<strong>সংযুক্ত খেলোয়াড়বৃন্দ:</strong><br>';
+        players.forEach(p => {
+            listDiv.innerHTML += `👤 ${p.name} (বয়স: ${p.age})<br>`;
+        });
+    }
+
+    function startTheMatch() {
+        socket.emit('start_host_match', { room: currentRoom });
+    }
 </script>
+
 </body>
 </html>
